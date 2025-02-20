@@ -2,3 +2,6 @@ uvicorn
 fastapi
 python-multipart
 Flask
+SpeechRecognition
+pydub
+openai-whisper
