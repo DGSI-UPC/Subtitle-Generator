@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, Response, UploadFile, HTTPException
 from fastapi.responses import HTMLResponse
 import uvicorn
 import os
@@ -103,11 +103,13 @@ async def upload_audio(audio_file: UploadFile = File(...)):
                 if os.path.exists(temp_segment_file):
                     os.remove(temp_segment_file)
 
-        # Return the diarized SRT content
-        return {
-            "filename": audio_file.filename,
-            "srt": srt_content
+        # Modified return statement for file download
+        base_filename = os.path.splitext(audio_file.filename)[0]
+        srt_filename = f"{base_filename}.srt"
+        headers = {
+            "Content-Disposition": f'attachment; filename="{srt_filename}"'
         }
+        return Response(content=srt_content, media_type="application/x-subrip", headers=headers)
 
     except Exception as e:
         return {"error": f"Processing error: {str(e)}"}
