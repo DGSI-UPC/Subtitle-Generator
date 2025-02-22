@@ -12,6 +12,8 @@ This project provides a simple web application that transcribes audio files into
 
 ## Requirements
 
+It is necessary to request access to pyannote/segmentation and pyannote/speaker-diarization.
+
 Before you begin, ensure you have the following installed:
 
 1.  **Python:** (3.7 or higher recommended).  You can check your Python version with `python --version` or `python3 --version`.
@@ -134,5 +136,4 @@ Contributions are welcome! If you'd like to contribute:
 *   **Implement Progress Bar:** Show upload and processing progress to the user.
 *   **Improve Error Handling:** Provide more informative error messages to the user.
 *   **Add Support for Subtitle Formats (SRT, VTT):** Allow users to download the transcription in common subtitle formats.
-*   **Explore Speaker Diarization:** Integrate a library like `pyannote.audio` to add speaker labels to the transcription.
 *   **Dockerization:** Create a Dockerfile to simplify deployment.
