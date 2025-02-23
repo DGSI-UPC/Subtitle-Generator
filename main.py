@@ -1,5 +1,7 @@
-from fastapi import FastAPI, File, Response, UploadFile, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, File, Response, UploadFile, HTTPException, Request
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.exceptions import RequestValidationError
+from starlette.middleware.base import BaseHTTPMiddleware
 import uvicorn
 import os
 import whisper
@@ -9,6 +11,18 @@ import tempfile
 from dotenv import load_dotenv
 
 app = FastAPI()
+
+MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50 MB
+
+class LimitUploadSizeMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if request.url.path == "/upload-audio/":
+            content_length = request.headers.get('content-length')
+            if content_length and int(content_length) > MAX_UPLOAD_SIZE:
+                return JSONResponse(content={"detail": "File size exceeds the maximum limit"}, status_code=413)
+        return await call_next(request)
+
+app.add_middleware(LimitUploadSizeMiddleware)
 
 model = whisper.load_model("base")
 if model is None:
