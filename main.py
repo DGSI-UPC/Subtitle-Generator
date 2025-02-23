@@ -1,5 +1,7 @@
-from fastapi import FastAPI, File, Response, UploadFile, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, File, Response, UploadFile, HTTPException, Request
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.exceptions import RequestValidationError
+from starlette.middleware.base import BaseHTTPMiddleware
 import uvicorn
 import os
 import whisper
@@ -10,7 +12,21 @@ from dotenv import load_dotenv
 
 app = FastAPI()
 
+MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50 MB
+
+class LimitUploadSizeMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if request.url.path == "/upload-audio/":
+            content_length = request.headers.get('content-length')
+            if content_length and int(content_length) > MAX_UPLOAD_SIZE:
+                return JSONResponse(content={"detail": "File size exceeds the maximum limit"}, status_code=413)
+        return await call_next(request)
+
+app.add_middleware(LimitUploadSizeMiddleware)
+
 model = whisper.load_model("base")
+if model is None:
+    raise ValueError("Failed to load Whisper model")
 
 load_dotenv()
 
@@ -19,7 +35,15 @@ auth_token = os.getenv("HF_AUTH_TOKEN")
 if not auth_token:
     raise ValueError("HF_AUTH_TOKEN not found in environment variables")
 
-diarization_pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization", use_auth_token=auth_token)
+print(f"HF_AUTH_TOKEN: {auth_token}")
+
+try:
+    diarization_pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization", use_auth_token=auth_token)
+    if diarization_pipeline is None:
+        raise ValueError("Failed to load diarization pipeline")
+    print(f"diarization_pipeline: {diarization_pipeline}")
+except Exception as e:
+    raise ValueError(f"Failed to load diarization pipeline: {str(e)}. Ensure your token has the necessary permissions and you have accepted the user conditions at https://hf.co/pyannote/speaker-diarization.")
 
 # Helper function to convert seconds to SRT timestamp format
 def seconds_to_srt_time(seconds):
@@ -61,6 +85,8 @@ async def upload_audio(audio_file: UploadFile = File(...)):
             processing_file = temp_filename
 
         # Perform speaker diarization
+        if diarization_pipeline is None:
+            raise ValueError("Diarization pipeline is not initialized")
         diarization = diarization_pipeline(processing_file)
         
         # Load audio for segment extraction
@@ -84,6 +110,8 @@ async def upload_audio(audio_file: UploadFile = File(...)):
                 segment.export(temp_segment_file, format="wav")
                 
                 # Transcribe the segment
+                if model is None:
+                    raise ValueError("Whisper model is not initialized")
                 result = model.transcribe(temp_segment_file)
                 
                 # Generate SRT entries for each transcription segment
