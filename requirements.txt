@@ -7,3 +7,5 @@ pydub
 openai-whisper
 pyannote.audio
 dotenv
+psutil
+torch
