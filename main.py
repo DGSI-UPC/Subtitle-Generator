@@ -9,6 +9,8 @@ from pydub import AudioSegment
 from pyannote.audio import Pipeline
 import tempfile
 from dotenv import load_dotenv
+import psutil
+import torch
 
 app = FastAPI()
 
@@ -24,9 +26,41 @@ class LimitUploadSizeMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(LimitUploadSizeMiddleware)
 
-model = whisper.load_model("base")
-if model is None:
-    raise ValueError("Failed to load Whisper model")
+# Define Whisper models with memory requirements (in GB)
+models = [
+    ("large", 10),  # Most accurate, 10 GB
+    ("turbo", 6),   # Fast, near-large accuracy, 6 GB
+    ("medium", 5),  # 5 GB
+    ("small", 2),   # 2 GB
+    ("base", 1),    # 1 GB
+    ("tiny", 1)     # Least accurate, 1 GB
+]
+
+# Get available RAM in GB
+available_ram_GB = psutil.virtual_memory().available / (1024 ** 3)
+
+# Select the largest model that fits in available RAM
+selected_model = None
+selected_requirement = None
+for model_name, requirement in models:
+    if requirement <= available_ram_GB:
+        selected_model = model_name
+        selected_requirement = requirement
+        break
+
+if selected_model is None:
+    raise ValueError("Insufficient RAM to load even the 'tiny' model (requires ~1 GB).")
+
+# Decide the device: use GPU if available and VRAM is sufficient
+device = "cpu"
+if torch.cuda.is_available():
+    total_vram_GB = torch.cuda.get_device_properties(0).total_memory / (1024 ** 3)
+    if total_vram_GB >= selected_requirement:
+        device = "cuda"
+
+# Load the selected model on the chosen device
+model = whisper.load_model(selected_model, device=device)
+print(f"Selected model: {selected_model} (requires ~{selected_requirement} GB) on {device}")
 
 load_dotenv()
 
