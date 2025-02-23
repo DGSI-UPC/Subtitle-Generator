@@ -125,8 +125,6 @@ Contributions are welcome! If you'd like to contribute:
 ## Limitations
 
 *   **Model Accuracy:** This project uses the "base" Whisper model. While fast, it may not be as accurate as larger models, especially with noisy audio or complex language.  Consider experimenting with other Whisper models (e.g., "small", "medium", "large") by changing `model = whisper.load_model("base")` in your Python code.  Larger models require more memory and processing power.
-*   **No Speaker Recognition:** The current implementation *does not* perform speaker recognition. The README initially stated it did, which was incorrect.  Adding speaker recognition would require integrating a separate speaker diarization library (like `pyannote.audio`).
-*   **Real-time Transcription:**  This is *not* a real-time transcription service.  It processes entire audio files after they are uploaded.  Real-time transcription would require a significantly different architecture (e.g., using WebSockets).
 *   **Error Handling:**  While basic error handling is included, more robust error handling and logging could be implemented.
 * **File Size:** There is no file size validation. This should be implemented.
 
