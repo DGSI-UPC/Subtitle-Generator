@@ -48,6 +48,8 @@ Before you begin, ensure you have the following installed:
     SpeechRecognition
     pydub
     openai-whisper
+    pyannote.audio
+    dotenv
     ```
 
 ## Setup and Running the Application
@@ -76,6 +78,28 @@ Before you begin, ensure you have the following installed:
 
     You should see the "Subtitle Generator" web page.
 
+## Docker Deployment
+
+To deploy the application using Docker, follow these steps:
+
+1. **Build the Docker Image:**
+    ```bash
+    docker build -t subtitle-generator .
+    ```
+
+2. **Run the Docker Container:**
+    ```bash
+    docker run -d -p 8080:8080 --name subtitle-generator -e HF_AUTH_TOKEN=<your_huggingface_token> subtitle-generator
+    ```
+
+    Replace `<your_huggingface_token>` with your actual Hugging Face token.
+
+3. **Access the Application:** Open your web browser and go to:
+    *   `http://localhost:8080` (if you're accessing it from the same machine)
+    *   `http://<your_server_ip>:8080` (if accessing from another device on your network, replace `<your_server_ip>` with the server's IP address)
+
+    You should see the "Subtitle Generator" web page.
+
 ## API Documentation
 
 The API has a single endpoint:
@@ -85,6 +109,7 @@ The API has a single endpoint:
     *   **Request:**
         *   `Content-Type`: `multipart/form-data`
         *   Body:  A single file field named `audio_file` containing the audio file.
+        *   A form field named `file_type` with the value `srt` or `vtt` to specify the desired subtitle format.
     *   **Response:**
         *   `Content-Type`: `application/json`
         *   Success (Status Code: 200):
@@ -112,6 +137,15 @@ The API has a single endpoint:
                   "error": "Processing error: ..."
               }
             ```
+
+## Hugging Face Token and User Agreements
+
+To use the `pyannote/speaker-diarization` and `pyannote/segmentation` models, you need to:
+
+1. **Create a Hugging Face Account:** Sign up at [Hugging Face](https://huggingface.co/join).
+2. **Generate an Access Token:** Go to your [Hugging Face settings](https://huggingface.co/settings/tokens) and create a new token.
+3. **Accept User Agreements:** Visit the [pyannote/speaker-diarization](https://huggingface.co/pyannote/speaker-diarization) and [pyannote/segmentation](https://huggingface.co/pyannote/segmentation) pages and accept the user agreements.
+
 ## Contributing
 
 Contributions are welcome! If you'd like to contribute:
