@@ -19,7 +19,7 @@ class LimitUploadSizeMiddleware(BaseHTTPMiddleware):
         if request.url.path == "/upload-audio/":
             content_length = request.headers.get('content-length')
             if content_length and int(content_length) > MAX_UPLOAD_SIZE:
-                return JSONResponse(content={"detail": "File size exceeds the maximum limit"}, status_code=413)
+                return JSONResponse(content={"detail": "File size exceeds the maximum limit of 50 MB."}, status_code=413)
         return await call_next(request)
 
 app.add_middleware(LimitUploadSizeMiddleware)
@@ -65,7 +65,7 @@ async def upload_audio(audio_file: UploadFile = File(...)):
     file_ext = os.path.splitext(audio_file.filename)[1].lower()
     
     if file_ext not in allowed_extensions:
-        raise HTTPException(status_code=400, detail="File format not supported")
+        raise HTTPException(status_code=400, detail="File format not supported. Please upload a file with one of the following extensions: .wav, .mp3, .m4a, .flac")
 
     temp_filename = f"temp_{audio_file.filename}"
     wav_filename = f"temp_converted_{audio_file.filename}.wav"
@@ -139,8 +139,10 @@ async def upload_audio(audio_file: UploadFile = File(...)):
         }
         return Response(content=srt_content, media_type="application/x-subrip", headers=headers)
 
+    except HTTPException as e:
+        return JSONResponse(status_code=e.status_code, content={"detail": e.detail})
     except Exception as e:
-        return {"error": f"Processing error: {str(e)}"}
+        return JSONResponse(status_code=500, content={"detail": f"An unexpected error occurred during processing: {str(e)}"})
     
     finally:
         # Clean up main temporary files
