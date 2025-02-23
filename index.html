@@ -74,6 +74,11 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        #error-message {
+            color: red;
+            margin-top: 20px;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -87,18 +92,22 @@
             <div class="loader"></div>
             <p>Processing...</p>
         </div>
+        <div id="error-message"></div>
     </div>
     <script>
         document.getElementById('upload-form').addEventListener('submit', function(event) {
             event.preventDefault();
             const form = event.target;
             const formData = new FormData(form);
+            const errorMessage = document.getElementById('error-message');
 
             const xhr = new XMLHttpRequest();
             xhr.open('POST', form.action, true);
 
             xhr.onloadstart = function() {
                 document.getElementById('loading-indicator').style.display = 'flex';
+                errorMessage.style.display = 'none';
+                errorMessage.textContent = '';
             };
 
             xhr.onload = function() {
@@ -113,11 +122,20 @@
                     a.click();
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
+                } else if (xhr.status === 413) {
+                    errorMessage.textContent = 'File size exceeds the maximum limit.';
+                    errorMessage.style.display = 'block';
+                } else {
+                    const response = JSON.parse(xhr.responseText);
+                    errorMessage.textContent = response.detail;
+                    errorMessage.style.display = 'block';
                 }
             };
 
             xhr.onerror = function() {
                 document.getElementById('loading-indicator').style.display = 'none';
+                errorMessage.textContent = 'An error occurred during the file upload or processing.';
+                errorMessage.style.display = 'block';
             };
 
             xhr.responseType = 'blob';

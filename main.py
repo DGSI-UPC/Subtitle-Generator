@@ -139,8 +139,10 @@ async def upload_audio(audio_file: UploadFile = File(...)):
         }
         return Response(content=srt_content, media_type="application/x-subrip", headers=headers)
 
+    except HTTPException as e:
+        return JSONResponse(status_code=e.status_code, content={"detail": e.detail})
     except Exception as e:
-        return {"error": f"Processing error: {str(e)}"}
+        return JSONResponse(status_code=500, content={"detail": f"Processing error: {str(e)}"})
     
     finally:
         # Clean up main temporary files
