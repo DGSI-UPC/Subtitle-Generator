@@ -33,7 +33,7 @@
             flex-direction: column;
             align-items: center;
         }
-        input[type="file"] {
+        input[type="file"], select {
             margin: 10px 0;
             padding: 10px;
             border-radius: 5px;
@@ -86,6 +86,10 @@
         <h1>Welcome to the Subtitle Generator</h1>
         <form id="upload-form" action="/upload-audio/" method="post" enctype="multipart/form-data">
             <input type="file" name="audio_file" required>
+            <select name="file_type" required>
+                <option value="srt">SRT</option>
+                <option value="vtt">VTT</option>
+            </select>
             <input type="submit" value="Upload">
         </form>
         <div id="loading-indicator" style="display: none;">
@@ -113,11 +117,11 @@
             xhr.onload = function() {
                 document.getElementById('loading-indicator').style.display = 'none';
                 if (xhr.status === 200) {
-                    const blob = new Blob([xhr.response], { type: 'application/x-subrip' });
+                    const blob = new Blob([xhr.response], { type: xhr.getResponseHeader('Content-Type') });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = 'subtitles.srt';
+                    a.download = xhr.getResponseHeader('Content-Disposition').split('filename=')[1].replace(/"/g, '');
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
