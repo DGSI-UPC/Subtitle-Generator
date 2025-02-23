@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, Response, UploadFile, HTTPException, Request
+from fastapi import FastAPI, File, Response, UploadFile, HTTPException, Request, Form
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -53,6 +53,14 @@ def seconds_to_srt_time(seconds):
     millis = int((seconds % 1) * 1000)
     return f"{hours:02}:{minutes:02}:{secs:02},{millis:03}"
 
+# Helper function to convert seconds to VTT timestamp format
+def seconds_to_vtt_time(seconds):
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    secs = int(seconds % 60)
+    millis = int((seconds % 1) * 1000)
+    return f"{hours:02}:{minutes:02}:{secs:02}.{millis:03}"
+
 @app.get("/", response_class=HTMLResponse)
 async def read_index():
     with open("index.html", "r") as file:
@@ -60,7 +68,7 @@ async def read_index():
     return HTMLResponse(content=html_content)
 
 @app.post("/upload-audio/")
-async def upload_audio(audio_file: UploadFile = File(...)):
+async def upload_audio(audio_file: UploadFile = File(...), file_type: str = Form(...)):
     allowed_extensions = {'.wav', '.mp3', '.m4a', '.flac'}
     file_ext = os.path.splitext(audio_file.filename)[1].lower()
     
@@ -92,8 +100,8 @@ async def upload_audio(audio_file: UploadFile = File(...)):
         # Load audio for segment extraction
         audio = AudioSegment.from_file(processing_file)
         
-        # Initialize SRT content and counter
-        srt_content = ""
+        # Initialize content and counter
+        content = ""
         counter = 1
 
         # Process each speaker turn
@@ -114,16 +122,22 @@ async def upload_audio(audio_file: UploadFile = File(...)):
                     raise ValueError("Whisper model is not initialized")
                 result = model.transcribe(temp_segment_file)
                 
-                # Generate SRT entries for each transcription segment
+                # Generate entries for each transcription segment
                 for seg in result["segments"]:
                     seg_start = start_time + seg['start']
                     seg_end = start_time + seg['end']
                     text = seg['text'].strip().replace('\n', ' ')
                     
-                    srt_entry = f"{counter}\n"
-                    srt_entry += f"{seconds_to_srt_time(seg_start)} --> {seconds_to_srt_time(seg_end)}\n"
-                    srt_entry += f"{speaker}: {text}\n\n"
-                    srt_content += srt_entry
+                    if file_type == 'srt':
+                        entry = f"{counter}\n"
+                        entry += f"{seconds_to_srt_time(seg_start)} --> {seconds_to_srt_time(seg_end)}\n"
+                        entry += f"{speaker}: {text}\n\n"
+                    elif file_type == 'vtt':
+                        entry = f"{counter}\n"
+                        entry += f"{seconds_to_vtt_time(seg_start)} --> {seconds_to_vtt_time(seg_end)}\n"
+                        entry += f"{speaker}: {text}\n\n"
+                    
+                    content += entry
                     counter += 1
             
             finally:
@@ -133,11 +147,17 @@ async def upload_audio(audio_file: UploadFile = File(...)):
 
         # Modified return statement for file download
         base_filename = os.path.splitext(audio_file.filename)[0]
-        srt_filename = f"{base_filename}.srt"
+        if file_type == 'srt':
+            filename = f"{base_filename}.srt"
+            media_type = "application/x-subrip"
+        elif file_type == 'vtt':
+            filename = f"{base_filename}.vtt"
+            media_type = "text/vtt"
+        
         headers = {
-            "Content-Disposition": f'attachment; filename="{srt_filename}"'
+            "Content-Disposition": f'attachment; filename="{filename}"'
         }
-        return Response(content=srt_content, media_type="application/x-subrip", headers=headers)
+        return Response(content=content, media_type=media_type, headers=headers)
 
     except HTTPException as e:
         return JSONResponse(status_code=e.status_code, content={"detail": e.detail})
