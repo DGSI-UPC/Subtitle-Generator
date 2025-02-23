@@ -123,7 +123,7 @@
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
                 } else if (xhr.status === 413) {
-                    errorMessage.textContent = 'File size exceeds the maximum limit.';
+                    errorMessage.textContent = 'File size exceeds the maximum limit of 50 MB.';
                     errorMessage.style.display = 'block';
                 } else {
                     const response = JSON.parse(xhr.responseText);
@@ -134,7 +134,7 @@
 
             xhr.onerror = function() {
                 document.getElementById('loading-indicator').style.display = 'none';
-                errorMessage.textContent = 'An error occurred during the file upload or processing.';
+                errorMessage.textContent = 'An unexpected error occurred during the file upload or processing.';
                 errorMessage.style.display = 'block';
             };
 
