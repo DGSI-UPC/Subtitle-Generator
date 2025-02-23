@@ -159,13 +159,8 @@ Contributions are welcome! If you'd like to contribute:
 ## Limitations
 
 *   **Model Accuracy:** This project uses the "base" Whisper model. While fast, it may not be as accurate as larger models, especially with noisy audio or complex language.  Consider experimenting with other Whisper models (e.g., "small", "medium", "large") by changing `model = whisper.load_model("base")` in your Python code.  Larger models require more memory and processing power.
-*   **Error Handling:**  While basic error handling is included, more robust error handling and logging could be implemented.
-* **File Size:** There is no file size validation. This should be implemented.
 
 ## Further Improvements (TODOs)
 
-*   **Add File Size Limits:** Prevent excessively large file uploads.
-*   **Implement Progress Bar:** Show upload and processing progress to the user.
-*   **Improve Error Handling:** Provide more informative error messages to the user.
-*   **Add Support for Subtitle Formats (SRT, VTT):** Allow users to download the transcription in common subtitle formats.
-*   **Dockerization:** Create a Dockerfile to simplify deployment.
+*   **Implement Progress Bar:** Show upload and processing progress bar to the user.
+*   **Improve Subtitles:** Search for better options in order to have a better transcription.
